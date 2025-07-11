@@ -1,0 +1,47 @@
+body {
+  margin: 0;
+  padding: 0;
+}
+body * {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@media (min-width: 768px) {
+  #wd-kambaz .wd-main-content-offset {
+    padding-left: 140px !important;
+  }
+}
+
+.btn-secondary {
+  --bs-btn-color: #000 !important;
+  --bs-btn-bg: #c7cdd1 !important;
+  --bs-btn-border-color: #c7cdd1 !important;
+  --bs-btn-hover-color: #fff !important;
+}
+.bg-secondary {
+  --bs-secondary-rgb: 199, 205, 209;
+}
+.list-group-item {
+  --bs-list-group-border-color: gray;
+}
+.wd-lesson {
+  border-left: 3px solid green !important;
+}
+
+.list-group.wd > .list-group-item.active {
+  color: #000;
+  background-color: #fff;
+  border-left: 3px solid #000 !important;
+}
+
+#wd-kambaz-navigation .list-group-item.active,
+#wd-kambaz-navigation .list-group-item.active svg {
+  color: #dc3545 !important;
+  background-color: #fff !important;
+}
+
+#wd-kambaz-navigation .list-group-item:hover,
+#wd-kambaz-navigation .list-group-item:hover svg {
+  color: #dc3545 !important;
+  background-color: #fff !important;
+}
