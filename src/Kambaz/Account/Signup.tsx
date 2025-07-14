@@ -1,15 +1,16 @@
+import { Form, Button } from "react-bootstrap";
 import { Link } from "react-router-dom";
 
 export default function Signup() {
   return (
-    <div id="wd-signup-screen">
-      <h3>Sign up</h3>
-      <input placeholder="username" className="wd-username" /><br/>
-      <input placeholder="password" type="password" className="wd-password" /><br/>
-      <input placeholder="verify password"
-             type="password" className="wd-password-verify" /><br/>
-      <Link to="/Kambaz/Account/Profile">Sign up</Link><br />
-      <Link to="/Kambaz/Account/Signin">Sign in</Link>
+    <div style={{ maxWidth: 400 }}>
+      <h1>Sign up</h1>
+      <Form.Control placeholder="username" className="mb-2" />
+      <Form.Control type="password" placeholder="password" className="mb-2" />
+      <Form.Control type="password" placeholder="confirm password" className="mb-2" />
+      <Button className="w-100 mb-2">Create account</Button>
+      <Link to="/Kambaz/Account/Signin">Have an account? Sign in</Link>
     </div>
   );
 }
+

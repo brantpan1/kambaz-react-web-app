@@ -1,0 +1,25 @@
+.wd-dashboard-course-card {
+  transition: box-shadow 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.wd-dashboard-course-card:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.wd-dashboard-course-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wd-dashboard-course-description {
+  height: 40px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}

@@ -1,40 +1,37 @@
-import { Link } from 'react-router-dom'
+import { ListGroup } from 'react-bootstrap'
+import { Link, useLocation, useParams } from 'react-router-dom'
 
 export default function CourseNavigation() {
+  const { cid } = useParams()
+  const { pathname } = useLocation()
+
+  const base = `/Kambaz/Courses/${cid}`
+
+  const links = [
+    { path: `${base}/Home`, label: 'Home', exact: true },
+    { path: `${base}/Modules`, label: 'Modules' },
+    { path: `${base}/Assignments`, label: 'Assignments' },
+    { path: `${base}/People`, label: 'People' },
+    { path: `${base}/Piazza`, label: 'Piazza' },
+  ]
+
   return (
-    <div id="wd-courses-navigation">
-      <Link to="/Kambaz/Courses/1234/Home" id="wd-course-home-link">
-        Home
-      </Link>
-      <br />
-      <Link to="/Kambaz/Courses/1234/Modules" id="wd-course-modules-link">
-        Modules
-      </Link>
-      <br />
-      <Link to="/Kambaz/Courses/1234/Piazza" id="wd-course-piazza-link">
-        Piazza
-      </Link>
-      <br />
-      <Link to="/Kambaz/Courses/1234/Zoom" id="wd-course-zoom-link">
-        Zoom
-      </Link>
-      <br />
-      <Link to="/Kambaz/Courses/1234/Assignments" id="wd-course-quizzes-link">
-        Assignments
-      </Link>
-      <br />
-      <Link to="/Kambaz/Courses/1234/Quizzes" id="wd-course-assignments-link">
-        Quizzes
-      </Link>
-      <br />
-      <Link to="/Kambaz/Courses/1234/Grades" id="wd-course-grades-link">
-        Grades
-      </Link>
-      <br />
-      <Link to="/Kambaz/Courses/1234/People" id="wd-course-people-link">
-        People
-      </Link>
-      <br />
-    </div>
+    <ListGroup id="wd-courses-navigation" className="wd fs-5 rounded-0 pe-3">
+      {links.map(({ path, label, exact }) => {
+        const isActive = exact ? pathname === path : pathname.startsWith(path)
+        return (
+          <ListGroup.Item
+            key={path}
+            as={Link}
+            to={path}
+            action
+            active={isActive}
+            className={`border-0${isActive ? '' : ' text-danger'}`}
+          >
+            {label}
+          </ListGroup.Item>
+        )
+      })}
+    </ListGroup>
   )
 }
