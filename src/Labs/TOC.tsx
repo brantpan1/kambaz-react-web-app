@@ -5,6 +5,12 @@ export default function TOC() {
   return (
     <Nav variant="pills">
       <Nav.Item>
+        <Nav.Link as={NavLink} to="/Labs" end>
+          Labs
+        </Nav.Link>
+      </Nav.Item>
+
+      <Nav.Item>
         <Nav.Link as={NavLink} to="/Labs/Lab1" end>
           Lab1
         </Nav.Link>

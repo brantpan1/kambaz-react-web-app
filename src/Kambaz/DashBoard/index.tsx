@@ -1,5 +1,5 @@
 import CourseCard from './CourseCard'
-import { courses } from './courseData'
+import { courses } from '../Database'
 import './DashBoard.css'
 
 export default function Dashboard() {

@@ -1,82 +1,73 @@
 import { Table } from 'react-bootstrap'
 import { FaUserCircle } from 'react-icons/fa'
+import { useParams } from 'react-router-dom'
+import { people, enrollment } from '../../Database'
 
-interface Person {
-  first: string
-  last: string
-  id: string
+interface User {
+  _id: string
+  firstName: string
+  lastName: string
+  loginId: string
   section: string
   role: string
   lastActivity: string
-  total: string
+  totalActivity: string
 }
-const people: Person[] = [
-  {
-    first: 'Tony',
-    last: 'Stark',
-    id: '001234561S',
-    section: 'S101',
-    role: 'STUDENT',
-    lastActivity: '2020-10-01',
-    total: '10:21:32',
-  },
-  {
-    first: 'Bruce',
-    last: 'Wayne',
-    id: '001234562S',
-    section: 'S101',
-    role: 'TA',
-    lastActivity: '2020-10-03',
-    total: '02:14:10',
-  },
-  {
-    first: 'Steve',
-    last: 'Rogers',
-    id: '001234563S',
-    section: 'S101',
-    role: 'STUDENT',
-    lastActivity: '2020-10-02',
-    total: '08:05:11',
-  },
-  {
-    first: 'Natasha',
-    last: 'Romanoff',
-    id: '001234564S',
-    section: 'S101',
-    role: 'STUDENT',
-    lastActivity: '2020-10-04',
-    total: '11:48:05',
-  },
-]
+
+interface Enrollment {
+  _id: string
+  user: string
+  course: string
+}
 
 export default function PeopleTable() {
+  const { cid } = useParams<{ cid: string }>()
+
+  const enrolledUsers = people.filter((user: User) =>
+    enrollment.some(
+      (enrollment: Enrollment) =>
+        enrollment.user === user._id && enrollment.course === cid,
+    ),
+  )
+
   return (
-    <Table striped id="wd-people-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Login ID</th>
-          <th>Section</th>
-          <th>Role</th>
-          <th>Last Activity</th>
-          <th>Total Activity</th>
-        </tr>
-      </thead>
-      <tbody>
-        {people.map((p) => (
-          <tr key={p.id}>
-            <td className="text-nowrap">
-              <FaUserCircle className="me-2 fs-1 text-secondary" />
-              {p.first} {p.last}
-            </td>
-            <td>{p.id}</td>
-            <td>{p.section}</td>
-            <td>{p.role}</td>
-            <td>{p.lastActivity}</td>
-            <td>{p.total}</td>
+    <div id="wd-people-table">
+      <Table striped>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Login ID</th>
+            <th>Section</th>
+            <th>Role</th>
+            <th>Last Activity</th>
+            <th>Total Activity</th>
           </tr>
-        ))}
-      </tbody>
-    </Table>
+        </thead>
+        <tbody>
+          {enrolledUsers.map((user: User) => (
+            <tr key={user._id}>
+              <td className="wd-full-name text-nowrap">
+                <FaUserCircle className="me-2 fs-1 text-secondary" />
+                <span className="wd-first-name">{user.firstName} </span>
+                <span className="wd-last-name">{user.lastName}</span>
+              </td>
+              <td className="wd-login-id">{user.loginId}</td>
+              <td className="wd-section">{user.section}</td>
+              <td className="wd-role">{user.role}</td>
+              <td className="wd-last-activity">{user.lastActivity}</td>
+              <td className="wd-total-activity">{user.totalActivity}</td>
+            </tr>
+          ))}
+
+          {enrolledUsers.length === 0 && (
+            <tr>
+              <td colSpan={6} className="text-center text-muted">
+                No users enrolled in this course.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </Table>
+    </div>
   )
 }

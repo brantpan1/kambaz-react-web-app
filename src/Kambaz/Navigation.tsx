@@ -9,12 +9,11 @@ export default function KambazNavigation() {
   const { pathname } = useLocation()
 
   const navItems = [
-    { path: '/Kambaz/Account', label: 'Account', Icon: FaRegCircleUser },
-    { path: '/Kambaz/Dashboard', label: 'Dashboard', Icon: AiOutlineDashboard },
-    { path: '/Kambaz/Courses', label: 'Courses', Icon: LiaBookSolid },
-    { path: '/Kambaz/Calendar', label: 'Calendar', Icon: IoCalendarOutline },
-    { path: '/Kambaz/Inbox', label: 'Inbox', Icon: FaInbox },
-    { path: '/Labs', label: 'Labs', Icon: LiaCogSolid },
+    { path: '/Kambaz/Dashboard', label: 'Dashboard', icon: AiOutlineDashboard },
+    { path: '/Kambaz/Dashboard', label: 'Courses', icon: LiaBookSolid },
+    { path: '/Kambaz/Calendar', label: 'Calendar', icon: IoCalendarOutline },
+    { path: '/Kambaz/Inbox', label: 'Inbox', icon: FaInbox },
+    { path: '/Labs', label: 'Labs', icon: LiaCogSolid },
   ]
 
   return (
@@ -35,20 +34,31 @@ export default function KambazNavigation() {
       </ListGroup.Item>
       <br />
 
-      {navItems.map(({ path, label, Icon }) => {
-        const isActive = pathname === path || pathname.startsWith(`${path}/`)
-        const classes = `text-center border-0 ${
-          isActive ? 'bg-white text-danger' : 'bg-black text-white'
-        }`
-
-        return (
-          <ListGroup.Item key={path} as={Link} to={path} className={classes}>
-            <Icon className="fs-1 text-danger" />
-            <br />
-            {label}
-          </ListGroup.Item>
-        )
-      })}
+      <ListGroup.Item
+        as={Link}
+        to="/Kambaz/Account"
+        className={`text-center border-0 bg-black
+            ${pathname.includes('Account') ? 'bg-white text-danger' : 'bg-black text-white'}`}
+      >
+        <FaRegCircleUser
+          className={`fs-1 ${pathname.includes('Account') ? 'text-danger' : 'text-white'}`}
+        />
+        <br />
+        Account
+      </ListGroup.Item>
+      {navItems.map((link) => (
+        <ListGroup.Item
+          key={link.path}
+          as={Link}
+          to={link.path}
+          className={`bg-black text-center border-0
+              ${pathname.includes(link.label) ? 'text-danger bg-white' : 'text-white bg-black'}`}
+        >
+          {link.icon({ className: 'fs-1 text-danger' })}
+          <br />
+          {link.label}
+        </ListGroup.Item>
+      ))}
     </ListGroup>
   )
 }
