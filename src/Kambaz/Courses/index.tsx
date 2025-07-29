@@ -13,10 +13,25 @@ import Modules from './Modules'
 import Assignments from './Assignments'
 import AssignmentEditor from './Assignments/Editor'
 import PeopleTable from './People/Table'
+import { useSelector } from 'react-redux'
+
+interface Course {
+  id: string
+  name: string
+  title: string
+  description: string
+  image: string
+}
 
 export default function Courses() {
   const { cid } = useParams<string>()
   const { pathname } = useLocation()
+
+  const courses = useSelector(
+    (state: any) => state.coursesReducer.courses,
+  ) as Course[]
+
+  const course = courses.find((course: any) => course.id === cid)
 
   const segments = pathname.split('/').filter(Boolean)
   const last = segments[segments.length - 1] || 'Home'
@@ -26,22 +41,20 @@ export default function Courses() {
       ? 'Assignment'
       : last
 
+  const displayName = course ? course.name : cid
+
   return (
     <div id="wd-courses" className="px-3">
       <div className="d-flex align-items-center py-2 border-bottom mb-3">
         <AiOutlineMenu className="fs-4 text-danger me-3" />
-
-        <span className="fw-bold fs-5 text-danger me-2">{cid}</span>
-
+        <span className="fw-bold fs-5 text-danger me-2">{displayName}</span>
         <FiChevronRight className="text-muted me-2" />
         <span className="fw-bold fs-5">{page}</span>
       </div>
-
       <div className="d-flex">
         <div className="d-none d-md-block">
           <CourseNavigation />
         </div>
-
         <div className="flex-fill ms-md-4">
           <Routes>
             <Route path="/" element={<Navigate to="Home" replace />} />

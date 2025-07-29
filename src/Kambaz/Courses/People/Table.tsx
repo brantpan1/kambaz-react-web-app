@@ -1,7 +1,8 @@
 import { Table } from 'react-bootstrap'
 import { FaUserCircle } from 'react-icons/fa'
 import { useParams } from 'react-router-dom'
-import { people, enrollment } from '../../Database'
+import { people } from '../../Database'
+import { useSelector } from 'react-redux'
 
 interface User {
   _id: string
@@ -22,9 +23,10 @@ interface Enrollment {
 
 export default function PeopleTable() {
   const { cid } = useParams<{ cid: string }>()
+  const enrollments = useSelector((state: any) => state.enrollmentsReducer)
 
   const enrolledUsers = people.filter((user: User) =>
-    enrollment.some(
+    enrollments.some(
       (enrollment: Enrollment) =>
         enrollment.user === user._id && enrollment.course === cid,
     ),

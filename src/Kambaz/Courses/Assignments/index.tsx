@@ -1,5 +1,14 @@
-import { useParams } from 'react-router-dom'
-import { Row, Col, Form, InputGroup, Button, ListGroup } from 'react-bootstrap'
+import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import {
+  Row,
+  Col,
+  Form,
+  InputGroup,
+  Button,
+  ListGroup,
+  Modal,
+} from 'react-bootstrap'
 import {
   BsGripVertical,
   BsThreeDotsVertical,
@@ -7,9 +16,9 @@ import {
 } from 'react-icons/bs'
 import { AiOutlineSearch, AiOutlinePlus } from 'react-icons/ai'
 import { FiFileText } from 'react-icons/fi'
-import { FaRegCheckCircle } from 'react-icons/fa'
-
-import { assignments } from '../../Database'
+import { FaRegCheckCircle, FaTrash } from 'react-icons/fa'
+import { useSelector, useDispatch } from 'react-redux'
+import { deleteAssignment } from './reducer'
 
 interface Assignment {
   _id: string
@@ -23,7 +32,15 @@ interface Assignment {
 }
 
 export default function Assignments() {
-  const { cid } = useParams<string>()
+  const { cid } = useParams<{ cid: string }>()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const { assignments } = useSelector((state: any) => state.assignmentsReducer)
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(
+    null,
+  )
 
   const courseAssignments: Assignment[] = assignments.filter(
     (assignment: Assignment) => assignment.course === cid,
@@ -49,6 +66,24 @@ export default function Assignments() {
     } else {
       return `Not available until ${formatDate(availableDate)}`
     }
+  }
+
+  const handleDeleteClick = (assignmentId: string) => {
+    setAssignmentToDelete(assignmentId)
+    setShowDeleteModal(true)
+  }
+
+  const handleDeleteConfirm = () => {
+    if (assignmentToDelete) {
+      dispatch(deleteAssignment(assignmentToDelete))
+    }
+    setShowDeleteModal(false)
+    setAssignmentToDelete(null)
+  }
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false)
+    setAssignmentToDelete(null)
   }
 
   const transformedAssignments = courseAssignments.map((assignment) => ({
@@ -89,6 +124,7 @@ export default function Assignments() {
             variant="danger"
             size="sm"
             className="d-flex align-items-center"
+            onClick={() => navigate(`/Kambaz/Courses/${cid}/Assignments/new`)}
           >
             <AiOutlinePlus className="me-1" /> Assignment
           </Button>
@@ -139,6 +175,11 @@ export default function Assignments() {
                       xs="auto"
                       className="d-flex align-items-center justify-content-end pe-3"
                     >
+                      <FaTrash
+                        className="text-danger me-3"
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => handleDeleteClick(id)}
+                      />
                       <FaRegCheckCircle className="text-success me-3" />
                       <BsThreeDots className="text-muted" />
                     </Col>
@@ -153,6 +194,23 @@ export default function Assignments() {
           </ListGroup.Item>
         )}
       </ListGroup>
+
+      <Modal show={showDeleteModal} onHide={handleDeleteCancel}>
+        <Modal.Header closeButton>
+          <Modal.Title>Delete Assignment</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to remove this assignment?
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleDeleteCancel}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleDeleteConfirm}>
+            Delete
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   )
 }

@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { Form, Row, Col } from 'react-bootstrap'
-import { useParams, Link } from 'react-router-dom'
-
-import { assignments } from '../../Database'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
+import { addAssignment, updateAssignment } from './reducer'
 
 interface Assignment {
   _id: string
@@ -11,19 +12,67 @@ interface Assignment {
   points: number
   dueDate: string
   availableDate: string
+  availableUntil?: string
   modules: string[]
 }
 
 export default function AssignmentEditor() {
   const { cid, aid } = useParams<{ cid: string; aid: string }>()
-  const assignment = assignments.find((a: Assignment) => a._id === aid)
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const { assignments } = useSelector((state: any) => state.assignmentsReducer)
+
+  const isNewAssignment = aid === 'new'
+  const assignment = isNewAssignment
+    ? null
+    : assignments.find((a: Assignment) => a._id === aid)
 
   const formatDateForInput = (dateString: string) => {
     const date = new Date(dateString)
     return date.toISOString().slice(0, 16) // YYYY-MM-DDTHH:MM
   }
 
-  if (!assignment) {
+  const [formData, setFormData] = useState({
+    title: assignment?.title || 'New Assignment',
+    description: assignment?.description || '',
+    points: assignment?.points || 100,
+    dueDate: assignment?.dueDate || new Date().toISOString(),
+    availableDate: assignment?.availableDate || new Date().toISOString(),
+    availableUntil:
+      assignment?.availableUntil ||
+      assignment?.dueDate ||
+      new Date().toISOString(),
+  })
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
+  const handleSave = () => {
+    if (isNewAssignment) {
+      dispatch(
+        addAssignment({
+          ...formData,
+          course: cid,
+          modules: ['Multiple Modules'],
+        }),
+      )
+    } else {
+      dispatch(
+        updateAssignment({
+          _id: aid,
+          ...assignment,
+          ...formData,
+        }),
+      )
+    }
+    navigate(`/Kambaz/Courses/${cid}/Assignments`)
+  }
+
+  if (!isNewAssignment && !assignment) {
     return (
       <div className="mt-3">
         <h3>Assignment Not Found</h3>
@@ -41,14 +90,18 @@ export default function AssignmentEditor() {
     <Form id="wd-assignments-editor" className="mt-3">
       <Form.Group controlId="wd-name" className="mb-4">
         <Form.Label>Assignment Name</Form.Label>
-        <Form.Control defaultValue={assignment.title} />
+        <Form.Control
+          value={formData.title}
+          onChange={(e) => handleInputChange('title', e.target.value)}
+        />
       </Form.Group>
 
       <Form.Group controlId="wd-description" className="mb-4">
         <Form.Control
           as="textarea"
           rows={8}
-          defaultValue={assignment.description}
+          value={formData.description}
+          onChange={(e) => handleInputChange('description', e.target.value)}
         />
       </Form.Group>
 
@@ -60,7 +113,10 @@ export default function AssignmentEditor() {
           <Form.Control
             id="wd-points"
             type="number"
-            defaultValue={assignment.points}
+            value={formData.points}
+            onChange={(e) =>
+              handleInputChange('points', parseInt(e.target.value) || 0)
+            }
           />
         </Col>
       </Row>
@@ -148,7 +204,13 @@ export default function AssignmentEditor() {
           <Form.Control
             type="datetime-local"
             id="wd-due-date"
-            defaultValue={formatDateForInput(assignment.dueDate)}
+            value={formatDateForInput(formData.dueDate)}
+            onChange={(e) =>
+              handleInputChange(
+                'dueDate',
+                new Date(e.target.value).toISOString(),
+              )
+            }
           />
         </Col>
       </Row>
@@ -161,7 +223,13 @@ export default function AssignmentEditor() {
           <Form.Control
             type="datetime-local"
             id="wd-available-from"
-            defaultValue={formatDateForInput(assignment.availableDate)}
+            value={formatDateForInput(formData.availableDate)}
+            onChange={(e) =>
+              handleInputChange(
+                'availableDate',
+                new Date(e.target.value).toISOString(),
+              )
+            }
           />
         </Col>
       </Row>
@@ -174,7 +242,15 @@ export default function AssignmentEditor() {
           <Form.Control
             type="datetime-local"
             id="wd-available-until"
-            defaultValue={formatDateForInput(assignment.dueDate)}
+            value={formatDateForInput(
+              formData.availableUntil || formData.dueDate,
+            )}
+            onChange={(e) =>
+              handleInputChange(
+                'availableUntil',
+                new Date(e.target.value).toISOString(),
+              )
+            }
           />
         </Col>
       </Row>
@@ -188,12 +264,9 @@ export default function AssignmentEditor() {
         >
           Cancel
         </Link>
-        <Link
-          to={`/Kambaz/Courses/${cid}/Assignments`}
-          className="btn btn-danger"
-        >
+        <button type="button" className="btn btn-danger" onClick={handleSave}>
           Save
-        </Link>
+        </button>
       </div>
     </Form>
   )

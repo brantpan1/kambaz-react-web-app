@@ -1,19 +1,18 @@
 import { ListGroup } from 'react-bootstrap'
 import { Link, useLocation } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 
 export default function AccountNavigation() {
+  const { currentUser } = useSelector((state: any) => state.accountReducer)
+  const links = currentUser ? ['Profile'] : ['Signin', 'Signup']
   const { pathname } = useLocation()
-
-  const links = [
-    { path: '/Kambaz/Account/Signin', label: 'Signin', exact: true },
-    { path: '/Kambaz/Account/Signup', label: 'Signup' },
-    { path: '/Kambaz/Account/Profile', label: 'Profile' },
-  ]
 
   return (
     <ListGroup id="wd-account-navigation" className="wd fs-5 rounded-0 pe-3">
-      {links.map(({ path, label, exact }) => {
-        const isActive = exact ? pathname === path : pathname.startsWith(path)
+      {links.map((label) => {
+        const path = `/Kambaz/Account/${label}`
+        const isActive = pathname === path
+
         return (
           <ListGroup.Item
             key={path}
