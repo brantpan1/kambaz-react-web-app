@@ -1,8 +1,8 @@
-import { Table } from 'react-bootstrap'
+import { useState, useEffect } from 'react'
+import { Table, Spinner } from 'react-bootstrap'
 import { FaUserCircle } from 'react-icons/fa'
 import { useParams } from 'react-router-dom'
-import { people } from '../../Database'
-import { useSelector } from 'react-redux'
+import { findAllUsersForCourse } from './client'
 
 interface User {
   _id: string
@@ -15,22 +15,39 @@ interface User {
   totalActivity: string
 }
 
-interface Enrollment {
-  _id: string
-  user: string
-  course: string
-}
-
 export default function PeopleTable() {
   const { cid } = useParams<{ cid: string }>()
-  const enrollments = useSelector((state: any) => state.enrollmentsReducer)
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const enrolledUsers = people.filter((user: User) =>
-    enrollments.some(
-      (enrollment: Enrollment) =>
-        enrollment.user === user._id && enrollment.course === cid,
-    ),
-  )
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!cid) return
+      setLoading(true)
+      try {
+        const fetchedUsers = await findAllUsersForCourse(cid)
+        setUsers(fetchedUsers)
+      } catch (error) {
+        console.error('Error fetching course users:', error)
+        setUsers([])
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [cid])
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+        <h4 className="text-muted mt-3">Loading course participants...</h4>
+      </div>
+    )
+  }
 
   return (
     <div id="wd-people-table">
@@ -46,7 +63,7 @@ export default function PeopleTable() {
           </tr>
         </thead>
         <tbody>
-          {enrolledUsers.map((user: User) => (
+          {users.map((user: User) => (
             <tr key={user._id}>
               <td className="wd-full-name text-nowrap">
                 <FaUserCircle className="me-2 fs-1 text-secondary" />
@@ -60,8 +77,7 @@ export default function PeopleTable() {
               <td className="wd-total-activity">{user.totalActivity}</td>
             </tr>
           ))}
-
-          {enrolledUsers.length === 0 && (
+          {users.length === 0 && (
             <tr>
               <td colSpan={6} className="text-center text-muted">
                 No users enrolled in this course.

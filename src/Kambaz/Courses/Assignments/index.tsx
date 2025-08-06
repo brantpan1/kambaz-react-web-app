@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Row,
@@ -18,7 +18,8 @@ import { AiOutlineSearch, AiOutlinePlus } from 'react-icons/ai'
 import { FiFileText } from 'react-icons/fi'
 import { FaRegCheckCircle, FaTrash } from 'react-icons/fa'
 import { useSelector, useDispatch } from 'react-redux'
-import { deleteAssignment } from './reducer'
+import { setAssignments } from './reducer'
+import * as client from './client'
 
 interface Assignment {
   _id: string
@@ -36,15 +37,27 @@ export default function Assignments() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const { assignments } = useSelector((state: any) => state.assignmentsReducer)
-
+  const [loading, setLoading] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(
-    null,
-  )
+  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(null)
 
-  const courseAssignments: Assignment[] = assignments.filter(
-    (assignment: Assignment) => assignment.course === cid,
-  )
+  const fetchAssignments = async () => {
+    if (!cid) return
+    setLoading(true)
+    try {
+      const fetchedAssignments = await client.findAssignmentsForCourse(cid)
+      dispatch(setAssignments(fetchedAssignments))
+    } catch (error) {
+      console.error('Error fetching assignments:', error)
+      dispatch(setAssignments([]))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAssignments()
+  }, [cid])
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -73,9 +86,14 @@ export default function Assignments() {
     setShowDeleteModal(true)
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (assignmentToDelete) {
-      dispatch(deleteAssignment(assignmentToDelete))
+      try {
+        await client.deleteAssignment(assignmentToDelete)
+        await fetchAssignments()
+      } catch (error) {
+        console.error('Error deleting assignment:', error)
+      }
     }
     setShowDeleteModal(false)
     setAssignmentToDelete(null)
@@ -86,16 +104,18 @@ export default function Assignments() {
     setAssignmentToDelete(null)
   }
 
-  const transformedAssignments = courseAssignments.map((assignment) => ({
-    id: assignment._id,
-    title: assignment.title,
-    meta: `${assignment.modules.join(', ')} | ${getAvailabilityText(assignment.availableDate)} | Due ${formatDate(assignment.dueDate)} | ${assignment.points} pts`,
-  }))
-
-  const totalPoints = courseAssignments.reduce(
-    (sum, assignment) => sum + assignment.points,
+  const totalPoints = assignments.reduce(
+    (sum: number, assignment: Assignment) => sum + assignment.points,
     0,
   )
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <h4 className="text-muted">Loading assignments...</h4>
+      </div>
+    )
+  }
 
   return (
     <div id="wd-assignments" className="d-flex flex-column">
@@ -132,7 +152,7 @@ export default function Assignments() {
       </Row>
 
       <ListGroup className="rounded-0">
-        {courseAssignments.length > 0 ? (
+        {assignments.length > 0 ? (
           <ListGroup.Item className="p-0 mb-4">
             <div className="d-flex align-items-center bg-light px-3 py-2 border-bottom">
               <BsGripVertical className="me-2 text-muted" />
@@ -150,9 +170,9 @@ export default function Assignments() {
             </div>
 
             <ListGroup className="rounded-0 border-start border-4 border-success">
-              {transformedAssignments.map(({ id, title, meta }) => (
+              {assignments.map((assignment: Assignment) => (
                 <ListGroup.Item
-                  key={id}
+                  key={assignment._id}
                   className="py-3 ps-2 pe-0 border-0 border-bottom"
                 >
                   <Row className="g-0 align-items-start">
@@ -163,12 +183,14 @@ export default function Assignments() {
 
                     <Col>
                       <a
-                        href={`#/Kambaz/Courses/${cid}/Assignments/${id}`}
+                        href={`#/Kambaz/Courses/${cid}/Assignments/${assignment._id}`}
                         className="fw-bold text-danger text-decoration-none"
                       >
-                        {title}
+                        {assignment.title}
                       </a>
-                      <div className="small text-muted">{meta}</div>
+                      <div className="small text-muted">
+                        {assignment.modules.join(', ')} | {getAvailabilityText(assignment.availableDate)} | Due {formatDate(assignment.dueDate)} | {assignment.points} pts
+                      </div>
                     </Col>
 
                     <Col
@@ -178,7 +200,7 @@ export default function Assignments() {
                       <FaTrash
                         className="text-danger me-3"
                         style={{ cursor: 'pointer' }}
-                        onClick={() => handleDeleteClick(id)}
+                        onClick={() => handleDeleteClick(assignment._id)}
                       />
                       <FaRegCheckCircle className="text-success me-3" />
                       <BsThreeDots className="text-muted" />

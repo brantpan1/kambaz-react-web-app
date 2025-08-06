@@ -35,6 +35,12 @@ export default function TOC() {
       </Nav.Item>
 
       <Nav.Item>
+        <Nav.Link as={NavLink} to="/Labs/Lab5">
+          Lab5
+        </Nav.Link>
+      </Nav.Item>
+
+      <Nav.Item>
         <Nav.Link as={NavLink} to="/Kambaz">
           Kambaz
         </Nav.Link>

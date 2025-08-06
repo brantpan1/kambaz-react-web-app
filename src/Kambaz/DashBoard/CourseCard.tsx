@@ -1,9 +1,9 @@
+import React, { useState, memo } from 'react'
 import { Link } from 'react-router-dom'
-import { Card, Button, Badge } from 'react-bootstrap'
-import { useSelector } from 'react-redux'
+import { Card, Button, Badge, Spinner } from 'react-bootstrap'
 
 interface Course {
-  id: string
+  _id: string
   name: string
   title: string
   description: string
@@ -11,6 +11,7 @@ interface Course {
 }
 
 interface CourseCardProps {
+  canEdit: boolean
   courseId: string
   courseName: string
   courseTitle: string
@@ -20,11 +21,15 @@ interface CourseCardProps {
   onDelete: (courseId: string) => void
   isCurrentlyEditing: boolean
   isEnrolled: boolean
-  onToggleEnroll: (courseId: string, isEnrolled: boolean) => void
+  onToggleEnroll: (
+    courseId: string,
+    isEnrolled: boolean,
+  ) => Promise<void> | void
   viewType: 'VIEW' | 'ENROLLMENT'
 }
 
-export default function CourseCard({
+function CourseCardImpl({
+  canEdit,
   courseId,
   courseName,
   courseTitle,
@@ -37,14 +42,13 @@ export default function CourseCard({
   onToggleEnroll,
   viewType,
 }: CourseCardProps) {
-  const { currentUser } = useSelector((state: any) => state.accountReducer)
-  const canEdit = currentUser?.role === 'FACULTY'
+  const [busy, setBusy] = useState(false)
 
   const handleEdit = (event: React.MouseEvent) => {
     event.preventDefault()
     event.stopPropagation()
     onEdit({
-      id: courseId,
+      _id: courseId,
       name: courseName,
       title: courseTitle,
       description: courseDescription,
@@ -57,6 +61,17 @@ export default function CourseCard({
     event.stopPropagation()
     if (window.confirm(`Are you sure you want to delete "${courseName}"?`)) {
       onDelete(courseId)
+    }
+  }
+
+  const handleToggle = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      setBusy(true)
+      await onToggleEnroll(courseId, isEnrolled)
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -75,11 +90,7 @@ export default function CourseCard({
       <Card.Body className="pb-5">
         <Card.Title
           className="wd-dashboard-course-title"
-          style={{
-            fontSize: '1.1rem',
-            fontWeight: '600',
-            marginBottom: '0.5rem',
-          }}
+          style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '.5rem' }}
         >
           {courseName}
         </Card.Title>
@@ -105,11 +116,9 @@ export default function CourseCard({
   return (
     <div className="col">
       <Card
-        className={`h-100 rounded-0 border wd-dashboard-course-card position-relative ${
-          isCurrentlyEditing ? 'border-warning border-2' : ''
-        }`}
+        className={`h-100 rounded-0 border wd-dashboard-course-card position-relative ${isCurrentlyEditing ? 'border-warning border-2' : ''}`}
         style={{
-          transition: 'all 0.2s ease-in-out',
+          transition: 'all .2s ease-in-out',
           transform: isCurrentlyEditing ? 'scale(1.02)' : 'scale(1)',
         }}
       >
@@ -165,13 +174,19 @@ export default function CourseCard({
             <Button
               variant={isEnrolled ? 'danger' : 'success'}
               size="sm"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                onToggleEnroll(courseId, isEnrolled)
-              }}
+              onClick={handleToggle}
+              disabled={busy}
             >
-              {isEnrolled ? 'Unenroll' : 'Enroll'}
+              {busy ? (
+                <>
+                  <Spinner animation="border" size="sm" className="me-2" />{' '}
+                  Processing…
+                </>
+              ) : isEnrolled ? (
+                'Unenroll'
+              ) : (
+                'Enroll'
+              )}
             </Button>
           </div>
         )}
@@ -179,3 +194,6 @@ export default function CourseCard({
     </div>
   )
 }
+
+const CourseCard = memo(CourseCardImpl)
+export default CourseCard

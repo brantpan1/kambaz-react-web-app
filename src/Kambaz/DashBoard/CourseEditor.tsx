@@ -1,7 +1,7 @@
 import { Form, Button, Row, Col, Card } from 'react-bootstrap'
 
 interface Course {
-  id: string
+  _id: string
   name: string
   title: string
   description: string

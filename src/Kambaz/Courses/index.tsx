@@ -31,7 +31,7 @@ export default function Courses() {
     (state: any) => state.coursesReducer.courses,
   ) as Course[]
 
-  const course = courses.find((course: any) => course.id === cid)
+  const course = courses.find((course: any) => course._id === cid)
 
   const segments = pathname.split('/').filter(Boolean)
   const last = segments[segments.length - 1] || 'Home'
