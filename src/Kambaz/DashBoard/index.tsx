@@ -1,142 +1,142 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Button } from 'react-bootstrap'
-import { useSelector, useDispatch, shallowEqual } from 'react-redux'
+import { useMemo, useState, useCallback } from 'react'
+import { useSelector } from 'react-redux'
+import type { RootState } from '@/store'
+import { Button, Spinner } from 'react-bootstrap'
+
 import CourseCard from './CourseCard'
 import CourseEditor from './CourseEditor'
-import {
-  setCourses,
-  setCurrentCourse,
-  resetCurrentCourse,
-} from '../Courses/reducer'
-import * as userClient from '../Account/client'
-import * as courseClient from '../Courses/client'
 import './DashBoard.css'
 
-function equalCourses(a: any[], b: any[]) {
-  if (a === b) return true
-  if (!a || !b || a.length !== b.length) return false
-  for (let i = 0; i < a.length; i++) {
-    const A = a[i],
-      B = b[i]
-    if (A._id !== B._id || A.enrolled !== B.enrolled) return false
-  }
-  return true
-}
+import {
+  useGetAllCoursesQuery,
+  useGetMyCoursesQuery,
+  useCreateCourseMutation,
+  useUpdateCourseMutation,
+  useDeleteCourseMutation,
+  type Course,
+} from '@features/courses/coursesApi'
+
+import {
+  useGetMyEnrollmentsQuery,
+  useEnrollInCourseMutation,
+  useUnenrollFromCourseMutation,
+} from '@features/enrollments/enrollmentsApi'
+
+type ViewType = 'VIEW' | 'ENROLLMENT'
 
 export default function Dashboard() {
-  const dispatch = useDispatch()
-  const { courses, currentCourse } = useSelector(
-    (s: any) => s.coursesReducer,
-    shallowEqual,
-  )
-  const { currentUser } = useSelector(
-    (s: any) => s.accountReducer,
-    shallowEqual,
-  )
-
-  const [showEditor, setShowEditor] = useState(false)
-  const [showAll, setShowAll] = useState(false)
-  const [loading, setLoading] = useState(false)
-
-  const isEditing = !!currentCourse?._id
+  const { currentUser } = useSelector((s: RootState) => s.auth)
   const canEdit = currentUser?.role === 'FACULTY'
 
-  const fetchCourses = useCallback(async () => {
-    setLoading(true)
-    try {
-      if (!currentUser) {
-        dispatch(setCourses([]))
-        return
-      }
-      const fetched = showAll
-        ? await courseClient.fetchAllCourses()
-        : await courseClient.fetchEnrolledCourses()
+  const [showAll, setShowAll] = useState(false)
+  const [showEditor, setShowEditor] = useState(false)
+  const [editingCourse, setEditingCourse] = useState<Partial<Course> | null>(
+    null,
+  )
+  const [enrollingId, setEnrollingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-      if (!equalCourses(fetched, courses)) {
-        dispatch(setCourses(fetched))
-      }
-    } catch (e) {
-      console.error('Error fetching courses:', e)
-      dispatch(setCourses([]))
-    } finally {
-      setLoading(false)
-    }
-  }, [currentUser, showAll, dispatch, courses])
+  const allCoursesQ = useGetAllCoursesQuery(undefined, { skip: !showAll })
+  const myCoursesQ = useGetMyCoursesQuery(undefined, { skip: false })
+  const myEnrollQ = useGetMyEnrollmentsQuery(undefined, { skip: !currentUser })
 
-  useEffect(() => {
-    fetchCourses()
-  }, [fetchCourses])
+  const { data: myEnrollments = [] } = useGetMyEnrollmentsQuery(undefined, {
+    skip: !currentUser,
+  })
+
+  const [createCourse, createQ] = useCreateCourseMutation()
+  const [updateCourse, updateQ] = useUpdateCourseMutation()
+  const [deleteCourse, deleteQ] = useDeleteCourseMutation()
+  const [enroll, enrollQ] = useEnrollInCourseMutation()
+  const [unenroll, unenrollQ] = useUnenrollFromCourseMutation()
+
+  const listLoading = showAll
+    ? allCoursesQ.isLoading || allCoursesQ.isFetching
+    : myCoursesQ.isLoading || myCoursesQ.isFetching
+  const enrollLoading = myEnrollQ.isLoading || myEnrollQ.isFetching
+  const loading = listLoading || enrollLoading
+
+  const busySaving = createQ.isLoading || updateQ.isLoading
+  const busyDeleting = deleteQ.isLoading
+  const busyEnroll = enrollQ.isLoading || unenrollQ.isLoading
+  const disableAll = loading || busySaving || busyDeleting || busyEnroll
+
+  const courses: Course[] = useMemo(() => {
+    if (showAll) return allCoursesQ.data ?? []
+    return myCoursesQ.data ?? []
+  }, [showAll, allCoursesQ.data, myCoursesQ.data])
+
+  const myCourseIdSet = useMemo(() => new Set(myEnrollments), [myEnrollments])
+  const isEditing = !!editingCourse?._id
+  const viewType: ViewType = showAll ? 'ENROLLMENT' : 'VIEW'
 
   const handleToggleEnroll = useCallback(
     async (courseId: string, isEnrolled: boolean) => {
       if (!currentUser) return
-      if (isEnrolled) {
-        await courseClient.unenrollFromCourse(courseId)
-      } else {
-        await courseClient.enrollInCourse(courseId)
+      setEnrollingId(courseId)
+      try {
+        if (isEnrolled) await unenroll(courseId).unwrap()
+        else await enroll(courseId).unwrap()
+      } catch (e) {
+        console.error('Toggle enrollment failed', e)
+      } finally {
+        setEnrollingId(null)
       }
-      await fetchCourses()
     },
-    [currentUser, fetchCourses],
+    [currentUser, enroll, unenroll],
   )
 
-  const handleAddNewCourse = useCallback(() => {
-    dispatch(resetCurrentCourse())
+  const handleAddNewCourse = () => {
+    setEditingCourse({ name: '', title: '', description: '', image: '' })
     setShowEditor(true)
-  }, [dispatch])
+  }
 
-  const handleEditCourse = useCallback(
-    (courseToEdit: any) => {
-      dispatch(setCurrentCourse(courseToEdit))
-      setShowEditor(true)
-    },
-    [dispatch],
-  )
+  const handleEditCourse = (courseToEdit: Course) => {
+    setEditingCourse(courseToEdit)
+    setShowEditor(true)
+  }
 
-  const handleSaveCourse = useCallback(async () => {
+  const handleCourseFieldChange = (field: keyof Course, value: string) => {
+    setEditingCourse((prev) => ({ ...(prev as Course), [field]: value }))
+  }
+
+  const handleSaveCourse = async () => {
+    if (!editingCourse) return
     try {
       if (isEditing) {
-        await courseClient.updateCourse(currentCourse)
+        await updateCourse({
+          id: editingCourse._id!,
+          patch: editingCourse,
+        }).unwrap()
       } else {
-        await userClient.createCourse(currentCourse)
+        await createCourse(editingCourse).unwrap()
       }
-      await fetchCourses()
       setShowEditor(false)
-      dispatch(resetCurrentCourse())
+      setEditingCourse(null)
     } catch (e) {
-      console.error('Error saving course:', e)
+      console.error('Save course failed', e)
     }
-  }, [isEditing, currentCourse, fetchCourses, dispatch])
+  }
 
-  const handleCancelEdit = useCallback(() => {
-    dispatch(resetCurrentCourse())
+  const handleCancelEdit = () => {
     setShowEditor(false)
-  }, [dispatch])
+    setEditingCourse(null)
+  }
 
-  const handleDeleteCourse = useCallback(
-    async (courseId: string) => {
-      try {
-        await courseClient.deleteCourse(courseId)
-        await fetchCourses()
-        if (currentCourse._id === courseId) {
-          setShowEditor(false)
-          dispatch(resetCurrentCourse())
-        }
-      } catch (e) {
-        console.error('Error deleting course:', e)
+  const handleDeleteCourse = async (courseId: string) => {
+    setDeletingId(courseId)
+    try {
+      await deleteCourse(courseId).unwrap()
+      if (editingCourse?._id === courseId) {
+        setShowEditor(false)
+        setEditingCourse(null)
       }
-    },
-    [currentCourse?._id, fetchCourses, dispatch],
-  )
-
-  const handleCourseFieldChange = useCallback(
-    (field: string, value: string) => {
-      dispatch(setCurrentCourse({ ...currentCourse, [field]: value }))
-    },
-    [currentCourse, dispatch],
-  )
-
-  const viewType: 'VIEW' | 'ENROLLMENT' = showAll ? 'ENROLLMENT' : 'VIEW'
+    } catch (e) {
+      console.error('Delete course failed', e)
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <div id="wd-dashboard" className="d-flex flex-column">
@@ -148,32 +148,40 @@ export default function Dashboard() {
             size="lg"
             onClick={() => setShowAll((p) => !p)}
             id="wd-toggle-enrollment-button"
-            disabled={loading}
+            disabled={disableAll}
           >
             {showAll ? 'Show My Courses' : 'Show All Courses'}
           </Button>
           {canEdit && !showEditor && (
-            <Button variant="primary" size="lg" onClick={handleAddNewCourse}>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={handleAddNewCourse}
+              disabled={disableAll}
+            >
               + Add New Course
             </Button>
           )}
         </div>
       </div>
 
-      {showEditor && (
+      {showEditor && editingCourse && (
         <CourseEditor
-          course={currentCourse}
-          setCourse={(course) => dispatch(setCurrentCourse(course))}
+          course={editingCourse as Course}
+          setCourse={(c) => setEditingCourse(c)}
           onSave={handleSaveCourse}
           onCancel={handleCancelEdit}
           onFieldChange={handleCourseFieldChange}
           isEditing={isEditing}
+          saving={busySaving}
+          disabled={disableAll}
         />
       )}
 
       <hr />
       <h2 id="wd-dashboard-published">
-        Published Courses ({loading ? '...' : courses.length})
+        {showAll ? 'All Courses' : 'My Courses'} (
+        {loading ? '…' : courses.length})
       </h2>
       <hr />
 
@@ -181,7 +189,8 @@ export default function Dashboard() {
         {loading ? (
           <div className="col-12">
             <div className="text-center py-5">
-              <h4 className="text-muted">Loading courses...</h4>
+              <Spinner animation="border" />
+              <h4 className="text-muted mt-3">Loading courses…</h4>
             </div>
           </div>
         ) : courses.length === 0 ? (
@@ -198,21 +207,30 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          courses.map((c: any) => (
+          courses.map((c) => (
             <CourseCard
               key={c._id}
-              canEdit={canEdit}
+              canEdit={canEdit && viewType === 'VIEW'}
               courseId={c._id}
               courseName={c.name}
-              courseTitle={c.title}
-              courseDescription={c.description}
-              courseImage={c.image}
+              courseTitle={c.title ?? ''}
+              courseDescription={c.description ?? ''}
+              courseImage={c.image ?? ''}
               onEdit={handleEditCourse}
               onDelete={handleDeleteCourse}
-              isCurrentlyEditing={currentCourse._id === c._id && showEditor}
-              isEnrolled={c.enrolled}
-              onToggleEnroll={handleToggleEnroll}
+              isCurrentlyEditing={
+                !!editingCourse && editingCourse._id === c._id && showEditor
+              }
               viewType={viewType}
+              isEnrolled={
+                showAll ? (c.enrolled ?? myCourseIdSet.has(c._id)) : true
+              }
+              onToggleEnroll={handleToggleEnroll}
+              disableAll={disableAll}
+              busyEnroll={busyEnroll}
+              isEnrolling={enrollingId === c._id}
+              busyDeleting={busyDeleting}
+              isDeleting={deletingId === c._id}
             />
           ))
         )}

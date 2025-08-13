@@ -1,199 +1,182 @@
-import React, { useState, memo } from 'react'
-import { Link } from 'react-router-dom'
-import { Card, Button, Badge, Spinner } from 'react-bootstrap'
+import { memo, MouseEvent } from 'react'
+import { Card } from 'react-bootstrap'
+import { useNavigate, Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 
-interface Course {
-  _id: string
-  name: string
-  title: string
-  description: string
-  image: string
-}
-
-interface CourseCardProps {
+type Props = {
   canEdit: boolean
   courseId: string
   courseName: string
   courseTitle: string
   courseDescription: string
   courseImage: string
-  onEdit: (course: Course) => void
-  onDelete: (courseId: string) => void
-  isCurrentlyEditing: boolean
-  isEnrolled: boolean
-  onToggleEnroll: (
-    courseId: string,
-    isEnrolled: boolean,
-  ) => Promise<void> | void
   viewType: 'VIEW' | 'ENROLLMENT'
+  isEnrolled: boolean
+  onEdit: (course: {
+    _id: string
+    name: string
+    title: string
+    description: string
+    image: string
+  }) => void
+  onDelete: (courseId: string) => void
+  onToggleEnroll: (courseId: string, isEnrolled: boolean) => void
+
+  disableAll?: boolean
+  busyEnroll?: boolean
+  isEnrolling?: boolean
+  busyDeleting?: boolean
+  isDeleting?: boolean
+  isCurrentlyEditing?: boolean
 }
 
-function CourseCardImpl({
-  canEdit,
-  courseId,
-  courseName,
-  courseTitle,
-  courseDescription,
-  courseImage,
-  onEdit,
-  onDelete,
-  isCurrentlyEditing = false,
-  isEnrolled,
-  onToggleEnroll,
-  viewType,
-}: CourseCardProps) {
-  const [busy, setBusy] = useState(false)
+function CourseCardImpl(props: Props) {
+  const navigate = useNavigate()
+  const openUrl = `/Kambaz/Courses/${props.courseId}/Home`
 
-  const handleEdit = (event: React.MouseEvent) => {
-    event.preventDefault()
-    event.stopPropagation()
-    onEdit({
-      _id: courseId,
-      name: courseName,
-      title: courseTitle,
-      description: courseDescription,
-      image: courseImage,
-    })
+  const role = useSelector((s: any) => s.auth?.currentUser?.role)
+  const canDelete = role === 'FACULTY' || role === 'ADMIN'
+
+  const deletingThis = !!props.isDeleting
+  const enrollingThis = !!props.isEnrolling
+
+  const canOpen =
+    props.viewType === 'VIEW' ||
+    (props.viewType === 'ENROLLMENT' && props.isEnrolled)
+
+  const enrollDisabled =
+    !!props.disableAll || !!props.busyEnroll || enrollingThis
+
+  const deleteDisabled =
+    !!props.disableAll || !!props.busyDeleting || deletingThis
+
+  const handleCardClick = () => {
+    if (canOpen) navigate(openUrl)
   }
-
-  const handleDelete = (event: React.MouseEvent) => {
-    event.preventDefault()
-    event.stopPropagation()
-    if (window.confirm(`Are you sure you want to delete "${courseName}"?`)) {
-      onDelete(courseId)
-    }
-  }
-
-  const handleToggle = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    try {
-      setBusy(true)
-      await onToggleEnroll(courseId, isEnrolled)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const cardBody = (
-    <>
-      <Card.Img
-        variant="top"
-        src={courseImage}
-        alt={courseTitle}
-        style={{ height: '160px', objectFit: 'cover' }}
-        className="rounded-0"
-        onError={(e) => {
-          e.currentTarget.src = '/images/default-course.jpg'
-        }}
-      />
-      <Card.Body className="pb-5">
-        <Card.Title
-          className="wd-dashboard-course-title"
-          style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '.5rem' }}
-        >
-          {courseName}
-        </Card.Title>
-        <Card.Subtitle className="mb-2 text-muted small">
-          {courseTitle}
-        </Card.Subtitle>
-        <Card.Text
-          className="wd-dashboard-course-description text-muted small"
-          style={{
-            display: '-webkit-box',
-            WebkitLineClamp: 3,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            lineHeight: '1.4',
-          }}
-        >
-          {courseDescription}
-        </Card.Text>
-      </Card.Body>
-    </>
-  )
+  const stop = (e: MouseEvent) => e.stopPropagation()
 
   return (
     <div className="col">
       <Card
-        className={`h-100 rounded-0 border wd-dashboard-course-card position-relative ${isCurrentlyEditing ? 'border-warning border-2' : ''}`}
-        style={{
-          transition: 'all .2s ease-in-out',
-          transform: isCurrentlyEditing ? 'scale(1.02)' : 'scale(1)',
-        }}
+        className="h-100 shadow-sm clickable-card wd-dashboard-course-card"
+        onClick={handleCardClick}
+        style={{ cursor: canOpen ? 'pointer' : 'default' }}
+        data-testid={`course-card-${props.courseId}`}
       >
-        {isCurrentlyEditing && (
-          <Badge
-            bg="warning"
-            className="position-absolute top-0 start-0 m-2"
-            style={{ zIndex: 10 }}
-          >
-            Editing
-          </Badge>
-        )}
-
-        {viewType === 'VIEW' ? (
+        {props.courseImage ? (
           <Link
-            to={`/Kambaz/Courses/${courseId}/Home`}
-            className="text-decoration-none text-dark"
-            style={{ display: 'block' }}
+            to={canOpen ? openUrl : '#'}
+            onClick={(e) => (!canOpen ? e.preventDefault() : null)}
+            aria-label={`Open ${props.courseName}`}
           >
-            {cardBody}
+            <Card.Img
+              variant="top"
+              src={props.courseImage}
+              alt={props.courseTitle || props.courseName}
+              style={{ objectFit: 'cover', height: 140 }}
+            />
           </Link>
         ) : (
-          <div style={{ display: 'block' }}>{cardBody}</div>
-        )}
-
-        {canEdit && viewType === 'VIEW' && (
-          <div className="position-absolute bottom-0 end-0 p-2">
-            <Button
-              variant="outline-warning"
-              size="sm"
-              className="me-1"
-              onClick={handleEdit}
-              id={`wd-edit-course-${courseId}`}
-              disabled={isCurrentlyEditing}
-              title={isCurrentlyEditing ? 'Currently editing' : 'Edit course'}
-            >
-              ✏️
-            </Button>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              onClick={handleDelete}
-              id={`wd-delete-course-${courseId}`}
-              title="Delete course"
-            >
-              🗑️
-            </Button>
+          <div
+            style={{ height: 140 }}
+            className="bg-light d-flex align-items-center justify-content-center text-muted"
+          >
+            No Image
           </div>
         )}
 
-        {viewType === 'ENROLLMENT' && (
-          <div className="position-absolute bottom-0 end-0 p-2">
-            <Button
-              variant={isEnrolled ? 'danger' : 'success'}
-              size="sm"
-              onClick={handleToggle}
-              disabled={busy}
+        <Card.Body className="d-flex flex-column">
+          <div className="d-flex align-items-start mb-1">
+            <Card.Title
+              className="wd-dashboard-course-title"
+              style={{
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                marginBottom: '.5rem',
+              }}
             >
-              {busy ? (
-                <>
-                  <Spinner animation="border" size="sm" className="me-2" />{' '}
-                  Processing…
-                </>
-              ) : isEnrolled ? (
-                'Unenroll'
-              ) : (
-                'Enroll'
+              <span>{props.courseName}</span>
+            </Card.Title>
+          </div>
+
+          <Card.Subtitle className="text-muted small mb-2">
+            {props.courseTitle}
+          </Card.Subtitle>
+          <Card.Text
+            className="wd-dashboard-course-description flex-grow-1 text-muted small"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              lineHeight: '1.4',
+            }}
+          >
+            {props.courseDescription || '—'}
+          </Card.Text>
+
+          {props.viewType === 'ENROLLMENT' ? (
+            <button
+              className={`btn w-100 ${props.isEnrolled ? 'btn-danger' : 'btn-success'}`}
+              disabled={enrollDisabled}
+              onClick={(e) => {
+                stop(e)
+                props.onToggleEnroll(props.courseId, props.isEnrolled)
+              }}
+            >
+              {enrollingThis && (
+                <span
+                  className="spinner-border spinner-border-sm me-2"
+                  role="status"
+                />
               )}
-            </Button>
-          </div>
-        )}
+              {props.isEnrolled ? 'Unenroll' : 'Enroll'}
+            </button>
+          ) : (
+            <div className="d-flex gap-2">
+              {props.canEdit && (
+                <button
+                  className="btn btn-secondary flex-fill"
+                  disabled={props.disableAll}
+                  onClick={(e) => {
+                    stop(e)
+                    props.onEdit({
+                      _id: props.courseId,
+                      name: props.courseName,
+                      title: props.courseTitle,
+                      description: props.courseDescription,
+                      image: props.courseImage,
+                    })
+                  }}
+                >
+                  {props.isCurrentlyEditing ? 'Editing…' : 'Edit'}
+                </button>
+              )}
+
+              {canDelete && (
+                <button
+                  className="btn btn-danger flex-fill"
+                  disabled={deleteDisabled}
+                  onClick={(e) => {
+                    stop(e)
+                    props.onDelete(props.courseId)
+                  }}
+                >
+                  {deletingThis && (
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                    />
+                  )}
+                  Delete
+                </button>
+              )}
+            </div>
+          )}
+        </Card.Body>
       </Card>
     </div>
   )
 }
 
-const CourseCard = memo(CourseCardImpl)
-export default CourseCard
+export default memo(CourseCardImpl)

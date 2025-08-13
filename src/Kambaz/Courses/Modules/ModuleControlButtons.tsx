@@ -1,8 +1,9 @@
 import { BsPlus } from 'react-icons/bs'
 import { IoEllipsisVertical } from 'react-icons/io5'
-import { FaTrash, FaPencil } from 'react-icons/fa6'
+import { FaTrash, FaPen } from 'react-icons/fa'
 import { useSelector } from 'react-redux'
 import GreenCheckmark from './GreenCheckmark'
+import type { RootState } from '@/store'
 
 export default function ModuleControlButtons({
   moduleId,
@@ -13,13 +14,13 @@ export default function ModuleControlButtons({
   deleteModule: (moduleId: string) => void
   editModule: (moduleId: string) => void
 }) {
-  const { currentUser } = useSelector((state: any) => state.accountReducer)
+  const { currentUser } = useSelector((state: RootState) => state.auth)
 
   return (
     <span className="float-end">
       {currentUser?.role === 'FACULTY' && (
         <>
-          <FaPencil
+          <FaPen
             onClick={() => editModule(moduleId)}
             className="text-primary me-3"
             style={{ cursor: 'pointer' }}

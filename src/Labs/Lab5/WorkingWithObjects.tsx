@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Form } from 'react-bootstrap'
 
-const REMOTE_SERVER = import.meta.env.VITE_REMOTE_SERVER
+const REMOTE_SERVER = import.meta.env.VITE_API_URL
 
 export default function WorkingWithObjects() {
   const [assignment, setAssignment] = useState({

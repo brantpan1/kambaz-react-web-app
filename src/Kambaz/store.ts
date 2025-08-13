@@ -1,17 +1,21 @@
 import { configureStore } from '@reduxjs/toolkit'
-import modulesReducer from './Courses/Modules/reducer'
-import accountReducer from './Account/reducer'
-import assignmentsReducer from './Courses/Assignments/reducer'
-import coursesReducer from './Courses/reducer'
-import enrollmentsReducer from './Courses/People/reducer'
+import { setupListeners } from '@reduxjs/toolkit/query'
+import { api } from '@services/api'
+import auth from '@features/account/authSlice'
+import { authListener } from '@app/authListeners'
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
-    modulesReducer,
-    accountReducer,
-    assignmentsReducer,
-    coursesReducer,
-    enrollmentsReducer,
+    [api.reducerPath]: api.reducer,
+    auth,
   },
+  middleware: (getDefault) =>
+    getDefault({
+    }).concat(api.middleware, authListener.middleware),
+  devTools: import.meta.env.DEV,
 })
-export default store
+
+setupListeners(store.dispatch)
+
+export type RootState = ReturnType<typeof store.getState>
+export type AppDispatch = typeof store.dispatch

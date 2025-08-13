@@ -1,7 +1,7 @@
 import { FormControl } from 'react-bootstrap'
 import { useState } from 'react'
 
-const REMOTE_SERVER = import.meta.env.VITE_REMOTE_SERVER
+const REMOTE_SERVER = import.meta.env.VITE_API_URL
 
 export default function QueryParameters() {
   const [a, setA] = useState('34')

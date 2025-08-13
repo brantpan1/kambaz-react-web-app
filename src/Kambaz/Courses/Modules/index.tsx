@@ -1,80 +1,87 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ListGroup, FormControl, Spinner, Placeholder } from 'react-bootstrap'
 import { BsGripVertical } from 'react-icons/bs'
 import { useParams } from 'react-router-dom'
-import { useSelector, useDispatch } from 'react-redux'
+
 import ModulesControls from './ModulesControls'
 import ModuleControlButtons from './ModuleControlButtons'
 import LessonControlButtons from './LessonControlButtons'
-import { setModules, setModuleEditing, updateModuleLocal } from './reducer'
-import * as client from './client'
+
+import {
+  useGetModulesByCourseQuery,
+  useCreateModuleMutation,
+  useUpdateModuleMutation,
+  useDeleteModuleMutation,
+  type Module,
+} from '@features/modules/modulesApi'
 
 export default function Modules() {
-  const { cid } = useParams()
+  const { cid } = useParams<{ cid: string }>()
+  const courseId = cid ?? ''
+
   const [moduleName, setModuleName] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [adding, setAdding] = useState(false)
-  const { modules } = useSelector((state: any) => state.modulesReducer)
-  const dispatch = useDispatch()
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
 
-  const fetchModules = async () => {
-    if (!cid) return
-    setLoading(true)
-    try {
-      const fetchedModules = await client.findModulesForCourse(cid)
-      dispatch(setModules(fetchedModules))
-    } catch (error) {
-      console.error('Error fetching modules:', error)
-      dispatch(setModules([]))
-    } finally {
-      setLoading(false)
-    }
-  }
+  const {
+    data: modules = [],
+    isLoading,
+    isFetching,
+    isError,
+  } = useGetModulesByCourseQuery(courseId, { skip: !courseId })
 
-  useEffect(() => {
-    fetchModules()
-  }, [cid])
+  const [createModule, { isLoading: creating }] = useCreateModuleMutation()
+  const [updateModule] = useUpdateModuleMutation()
+  const [deleteModule] = useDeleteModuleMutation()
 
   const handleAddModule = async () => {
-    if (!cid || !moduleName.trim()) return
+    if (!courseId || !moduleName.trim()) return
     try {
-      setAdding(true)
-      const newModule = await client.createModule(cid, { name: moduleName })
-      dispatch(setModules([...modules, newModule]))
+      await createModule({ courseId, body: { name: moduleName } }).unwrap()
       setModuleName('')
-    } catch (error) {
-      console.error('Error adding module:', error)
+    } catch (e) {
+      console.error('Error creating module:', e)
+    }
+  }
+
+  const handleUpdateModule = async (id: string, name: string) => {
+    if (!courseId) return
+    try {
+      await updateModule({ courseId, id, patch: { name } }).unwrap()
+    } catch (e) {
+      console.error('Error updating module:', e)
     } finally {
-      setAdding(false)
+      setEditingId(null)
+      setEditValue('')
     }
   }
 
-  const handleUpdateModule = async (module: any) => {
+  const handleDeleteModule = async (id: string) => {
+    if (!courseId) return
     try {
-      const updatedModule = await client.updateModule(module)
-      dispatch(updateModuleLocal({ ...updatedModule, editing: false }))
-    } catch (error) {
-      console.error('Error updating module:', error)
+      await deleteModule({ courseId, id }).unwrap()
+    } catch (e) {
+      console.error('Error deleting module:', e)
     }
   }
 
-  const handleDeleteModule = async (moduleId: string) => {
-    try {
-      await client.deleteModule(moduleId)
-      dispatch(setModules(modules.filter((m: any) => m._id !== moduleId)))
-    } catch (error) {
-      console.error('Error deleting module:', error)
-    }
+  const startEdit = (m: Module) => {
+    setEditingId(m._id)
+    setEditValue(m.name ?? '')
   }
 
-  const handleEditModule = (moduleId: string) => {
-    dispatch(setModuleEditing(moduleId))
-  }
-
-  if (loading) {
+  if (isLoading || isFetching) {
     return (
       <div className="text-center py-5">
         <h4 className="text-muted">Loading modules...</h4>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center py-5 text-danger">
+        Failed to load modules.
       </div>
     )
   }
@@ -90,44 +97,44 @@ export default function Modules() {
       </div>
 
       <ListGroup className="rounded-0">
-        {modules.map((module: any) => (
+        {modules.map((module) => (
           <ListGroup.Item
             key={module._id}
             className="wd-module p-0 mb-5 fs-5 border-gray"
           >
             <div className="wd-title p-3 ps-2 bg-secondary">
               <BsGripVertical className="me-2 fs-3" />
-              {!module.editing && module.name}
-              {module.editing && (
+
+              {editingId !== module._id && module.name}
+
+              {editingId === module._id && (
                 <FormControl
                   className="w-50 d-inline-block"
-                  onChange={(e) =>
-                    dispatch(
-                      updateModuleLocal({ ...module, name: e.target.value }),
-                    )
-                  }
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleUpdateModule({ ...module, editing: false })
+                    if (e.key === 'Enter')
+                      handleUpdateModule(module._id, editValue)
+                    if (e.key === 'Escape') {
+                      setEditingId(null)
+                      setEditValue('')
                     }
                   }}
-                  onBlur={() =>
-                    handleUpdateModule({ ...module, editing: false })
-                  }
-                  defaultValue={module.name}
+                  onBlur={() => handleUpdateModule(module._id, editValue)}
                   autoFocus
                 />
               )}
+
               <ModuleControlButtons
                 moduleId={module._id}
                 deleteModule={handleDeleteModule}
-                editModule={handleEditModule}
+                editModule={() => startEdit(module)}
               />
             </div>
 
             {module.lessons && module.lessons.length > 0 ? (
               <ListGroup className="wd-lessons rounded-0">
-                {module.lessons.map((lesson: any) => (
+                {module.lessons.map((lesson) => (
                   <ListGroup.Item
                     key={lesson._id}
                     className="wd-lesson p-3 ps-1"
@@ -149,7 +156,7 @@ export default function Modules() {
           </ListGroup.Item>
         ))}
 
-        {adding && (
+        {creating && (
           <ListGroup.Item className="wd-module p-1 mb-5 fs-5 border-gray">
             <div className="wd-title p-4 ps-2 bg-secondary d-flex align-items-center">
               <Spinner animation="border" size="sm" className="me-3" />
@@ -166,7 +173,7 @@ export default function Modules() {
           </ListGroup.Item>
         )}
 
-        {modules.length === 0 && !adding && (
+        {modules.length === 0 && !creating && (
           <ListGroup.Item className="p-3 text-center text-muted">
             No modules available for this course.
           </ListGroup.Item>

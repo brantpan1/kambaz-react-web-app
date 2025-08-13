@@ -1,7 +1,34 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "isolatedModules": true,
+
+    "noEmit": true,
+    "declaration": false,
+    "emitDeclarationOnly": false,
+
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["Kambaz/*"],
+      "@app/*": ["Kambaz/app/*"],
+      "@features/*": ["Kambaz/features/*"],
+      "@services/*": ["Kambaz/services/*"]
+    },
+
+    "types": ["vite/client"],
+    "resolveJsonModule": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
+

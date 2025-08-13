@@ -1,41 +1,52 @@
-import { Routes, Route, Navigate } from 'react-router'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
+import type { RootState } from '@/store'
 import AccountNavigation from './Navigation'
 import Signin from './Signin'
 import Profile from './Profile'
 import Signup from './Signup'
+import ProtectedRoute from './ProtectedRoute'
+import Session from './Session'
 
 export default function Account() {
-  const { currentUser } = useSelector((state: any) => state.accountReducer)
+  const currentUser = useSelector((s: RootState) => s.auth.currentUser)
 
   return (
-    <div id="wd-account-screen">
-      <table>
-        <tr>
-          <td valign="top">
-            <AccountNavigation />
-          </td>
-          <td valign="top">
-            <Routes>
-              <Route
-                path="/"
-                element={
-                  <Navigate
-                    to={
-                      currentUser
-                        ? '/Kambaz/Account/Profile'
-                        : '/Kambaz/Account/Signin'
+    <Session>
+      <div id="wd-account-screen">
+        <table>
+          <tbody>
+            <tr>
+              <td valign="top">
+                <AccountNavigation />
+              </td>
+              <td valign="top">
+                <Routes>
+                  <Route
+                    index
+                    element={
+                      <Navigate
+                        to={currentUser ? 'Profile' : 'Signin'}
+                        replace
+                      />
                     }
                   />
-                }
-              />
-              <Route path="/Signin" element={<Signin />} />
-              <Route path="/Signup" element={<Signup />} />
-              <Route path="/Profile" element={<Profile />} />
-            </Routes>
-          </td>
-        </tr>
-      </table>
-    </div>
+                  <Route path="Signin" element={<Signin />} />
+                  <Route path="Signup" element={<Signup />} />
+                  <Route
+                    path="Profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Session>
   )
 }

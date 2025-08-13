@@ -24,6 +24,17 @@
   -webkit-box-orient: vertical;
 }
 
-.wd-action-btn {
-  min-width: 220px;
+.clickable-card {
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.clickable-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.btn-success:hover,
+.btn-danger:hover {
+  filter: brightness(0.95);
 }

@@ -4,6 +4,7 @@ import { FaPlus } from 'react-icons/fa6'
 import { useSelector } from 'react-redux'
 import GreenCheckmark from './GreenCheckmark'
 import ModuleEditor from './ModuleEditor'
+import type { RootState } from '@/store'
 
 export default function ModulesControls({
   moduleName,
@@ -14,7 +15,7 @@ export default function ModulesControls({
   setModuleName: (title: string) => void
   addModule: () => void
 }) {
-  const { currentUser } = useSelector((state: any) => state.accountReducer)
+  const { currentUser } = useSelector((state: RootState) => state.auth)
   const [show, setShow] = useState(false)
   const handleClose = () => setShow(false)
   const handleShow = () => setShow(true)

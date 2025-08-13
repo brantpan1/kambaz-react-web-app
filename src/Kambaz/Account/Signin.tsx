@@ -1,49 +1,47 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { setCurrentUser } from './reducer'
-import { useDispatch } from 'react-redux'
-import { FormControl, Button } from 'react-bootstrap'
-import * as client from './client'
+import { Form, Button } from 'react-bootstrap'
+import { useNavigate, Link } from 'react-router-dom'
+import { useSigninMutation } from '@features/account/authApi'
 
 export default function Signin() {
-  const [credentials, setCredentials] = useState<any>({})
-  const dispatch = useDispatch()
+  const [form, setForm] = useState({ username: '', password: '' })
+  const [signin, { isLoading, error }] = useSigninMutation()
   const navigate = useNavigate()
 
-  const signin = async () => {
-    const user = await client.signin(credentials)
-    if (!user) return
-    dispatch(setCurrentUser(user))
-    navigate('/Kambaz/Dashboard')
+  const onSubmit = async () => {
+    try {
+      await signin(form).unwrap()
+      navigate('/Kambaz/Account/Profile')
+    } catch {}
   }
 
   return (
     <div id="wd-signin-screen" style={{ maxWidth: 400 }}>
       <h1>Sign in</h1>
-      <FormControl
-        defaultValue={credentials.username}
-        onChange={(e) =>
-          setCredentials({ ...credentials, username: e.target.value })
-        }
-        className="mb-2"
+      <Form.Control
+        value={form.username}
         placeholder="username"
-        id="wd-username"
-      />
-      <FormControl
-        defaultValue={credentials.password}
-        onChange={(e) =>
-          setCredentials({ ...credentials, password: e.target.value })
-        }
         className="mb-2"
-        placeholder="password"
-        type="password"
-        id="wd-password"
+        onChange={(e) => setForm({ ...form, username: e.target.value })}
       />
-      <Button onClick={signin} id="wd-signin-btn" className="w-100 mb-2">
+      <Form.Control
+        value={form.password}
+        type="password"
+        placeholder="password"
+        className="mb-2"
+        onChange={(e) => setForm({ ...form, password: e.target.value })}
+      />
+      {error && <div className="text-danger mb-2">Sign in failed.</div>}
+      <Button
+        disabled={isLoading}
+        onClick={onSubmit}
+        id="wd-signin-btn"
+        className="w-100 mb-2"
+      >
         Sign in
       </Button>
       <Link id="wd-signup-link" to="/Kambaz/Account/Signup">
-        Sign up
+        Create account
       </Link>
     </div>
   )

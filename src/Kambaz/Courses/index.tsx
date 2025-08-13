@@ -1,10 +1,4 @@
-import {
-  Routes,
-  Route,
-  Navigate,
-  useParams,
-  useLocation,
-} from 'react-router-dom'
+import { Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom'
 import { AiOutlineMenu } from 'react-icons/ai'
 import { FiChevronRight } from 'react-icons/fi'
 import CourseNavigation from './Navigation'
@@ -13,25 +7,14 @@ import Modules from './Modules'
 import Assignments from './Assignments'
 import AssignmentEditor from './Assignments/Editor'
 import PeopleTable from './People/Table'
-import { useSelector } from 'react-redux'
 
-interface Course {
-  id: string
-  name: string
-  title: string
-  description: string
-  image: string
-}
+import { useGetCourseByIdQuery } from '@features/courses/coursesApi'
 
 export default function Courses() {
-  const { cid } = useParams<string>()
+  const { cid } = useParams<{ cid: string }>()
   const { pathname } = useLocation()
 
-  const courses = useSelector(
-    (state: any) => state.coursesReducer.courses,
-  ) as Course[]
-
-  const course = courses.find((course: any) => course._id === cid)
+  const { data: course } = useGetCourseByIdQuery(cid!, { skip: !cid })
 
   const segments = pathname.split('/').filter(Boolean)
   const last = segments[segments.length - 1] || 'Home'
@@ -41,7 +24,7 @@ export default function Courses() {
       ? 'Assignment'
       : last
 
-  const displayName = course ? course.name : cid
+  const displayName = course?.name ?? cid
 
   return (
     <div id="wd-courses" className="px-3">
@@ -69,3 +52,4 @@ export default function Courses() {
     </div>
   )
 }
+

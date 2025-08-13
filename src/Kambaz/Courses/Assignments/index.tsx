@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   Row,
@@ -16,48 +16,35 @@ import {
 } from 'react-icons/bs'
 import { AiOutlineSearch, AiOutlinePlus } from 'react-icons/ai'
 import { FiFileText } from 'react-icons/fi'
-import { FaRegCheckCircle, FaTrash } from 'react-icons/fa'
-import { useSelector, useDispatch } from 'react-redux'
-import { setAssignments } from './reducer'
-import * as client from './client'
+import { FaRegCheckCircle, FaTrash, FaPen } from 'react-icons/fa'
+import { useSelector } from 'react-redux'
+import type { RootState } from '@/store'
 
-interface Assignment {
-  _id: string
-  title: string
-  course: string
-  description: string
-  points: number
-  dueDate: string
-  availableDate: string
-  modules: string[]
-}
+import {
+  useGetAssignmentsByCourseQuery,
+  useDeleteAssignmentMutation,
+  type Assignment,
+} from '@features/assignments/assignmentsApi'
 
 export default function Assignments() {
   const { cid } = useParams<{ cid: string }>()
   const navigate = useNavigate()
-  const dispatch = useDispatch()
-  const { assignments } = useSelector((state: any) => state.assignmentsReducer)
-  const [loading, setLoading] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(null)
+  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(
+    null,
+  )
 
-  const fetchAssignments = async () => {
-    if (!cid) return
-    setLoading(true)
-    try {
-      const fetchedAssignments = await client.findAssignmentsForCourse(cid)
-      dispatch(setAssignments(fetchedAssignments))
-    } catch (error) {
-      console.error('Error fetching assignments:', error)
-      dispatch(setAssignments([]))
-    } finally {
-      setLoading(false)
-    }
-  }
+  const role = useSelector((s: RootState) => s.auth.currentUser?.role)
+  const canManage = role === 'FACULTY' || role === 'ADMIN'
 
-  useEffect(() => {
-    fetchAssignments()
-  }, [cid])
+  const {
+    data: assignments = [],
+    isLoading,
+    isFetching,
+    isError,
+  } = useGetAssignmentsByCourseQuery(cid!, { skip: !cid })
+
+  const [deleteAssignment] = useDeleteAssignmentMutation()
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -73,26 +60,25 @@ export default function Assignments() {
   const getAvailabilityText = (availableDate: string) => {
     const now = new Date()
     const available = new Date(availableDate)
-
-    if (now >= available) {
-      return `Available since ${formatDate(availableDate)}`
-    } else {
-      return `Not available until ${formatDate(availableDate)}`
-    }
+    return now >= available
+      ? `Available since ${formatDate(availableDate)}`
+      : `Not available until ${formatDate(availableDate)}`
   }
 
-  const handleDeleteClick = (assignmentId: string) => {
-    setAssignmentToDelete(assignmentId)
+  const handleDeleteClick = (id: string) => {
+    setAssignmentToDelete(id)
     setShowDeleteModal(true)
   }
 
   const handleDeleteConfirm = async () => {
-    if (assignmentToDelete) {
+    if (assignmentToDelete && cid) {
       try {
-        await client.deleteAssignment(assignmentToDelete)
-        await fetchAssignments()
-      } catch (error) {
-        console.error('Error deleting assignment:', error)
+        await deleteAssignment({
+          courseId: cid,
+          id: assignmentToDelete,
+        }).unwrap()
+      } catch (e) {
+        console.error('Error deleting assignment:', e)
       }
     }
     setShowDeleteModal(false)
@@ -105,14 +91,22 @@ export default function Assignments() {
   }
 
   const totalPoints = assignments.reduce(
-    (sum: number, assignment: Assignment) => sum + assignment.points,
+    (sum: number, a: Assignment) => sum + (a.points || 0),
     0,
   )
 
-  if (loading) {
+  if (isLoading || isFetching) {
     return (
       <div className="text-center py-5">
         <h4 className="text-muted">Loading assignments...</h4>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="text-center py-5 text-danger">
+        Failed to load assignments.
       </div>
     )
   }
@@ -170,7 +164,7 @@ export default function Assignments() {
             </div>
 
             <ListGroup className="rounded-0 border-start border-4 border-success">
-              {assignments.map((assignment: Assignment) => (
+              {assignments.map((assignment) => (
                 <ListGroup.Item
                   key={assignment._id}
                   className="py-3 ps-2 pe-0 border-0 border-bottom"
@@ -189,7 +183,10 @@ export default function Assignments() {
                         {assignment.title}
                       </a>
                       <div className="small text-muted">
-                        {assignment.modules.join(', ')} | {getAvailabilityText(assignment.availableDate)} | Due {formatDate(assignment.dueDate)} | {assignment.points} pts
+                        {assignment.modules?.join(', ') || '—'} |{' '}
+                        {getAvailabilityText(assignment.availableDate)} | Due{' '}
+                        {formatDate(assignment.dueDate)} | {assignment.points}{' '}
+                        pts
                       </div>
                     </Col>
 
@@ -197,11 +194,26 @@ export default function Assignments() {
                       xs="auto"
                       className="d-flex align-items-center justify-content-end pe-3"
                     >
-                      <FaTrash
-                        className="text-danger me-3"
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => handleDeleteClick(assignment._id)}
-                      />
+                      {canManage && (
+                        <FaPen
+                          className="text-secondary me-3"
+                          style={{ cursor: 'pointer' }}
+                          title="Edit"
+                          onClick={() =>
+                            navigate(
+                              `/Kambaz/Courses/${cid}/Assignments/${assignment._id}`,
+                            )
+                          }
+                        />
+                      )}
+                      {canManage && (
+                        <FaTrash
+                          className="text-danger me-3"
+                          style={{ cursor: 'pointer' }}
+                          title="Delete"
+                          onClick={() => handleDeleteClick(assignment._id)}
+                        />
+                      )}
                       <FaRegCheckCircle className="text-success me-3" />
                       <BsThreeDots className="text-muted" />
                     </Col>

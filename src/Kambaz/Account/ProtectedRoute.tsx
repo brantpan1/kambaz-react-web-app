@@ -1,48 +1,34 @@
-import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
+import type { RootState } from '@/store'
 import { Navigate, useParams } from 'react-router-dom'
 import { Spinner } from 'react-bootstrap'
-import { getCurrentUserEnrollments } from '../Courses/People/client'
+import { useGetMyEnrollmentsQuery } from '@features/enrollments/enrollmentsApi'
+import type { ReactNode } from 'react'
 
-export default function ProtectedRoute({ children }: { children: any }) {
-  const { currentUser } = useSelector((s: any) => s.accountReducer)
+export default function ProtectedRoute({ children }: { children: ReactNode }) {
+  const currentUser = useSelector((s: RootState) => s.auth.currentUser)
   const { cid } = useParams<{ cid?: string }>()
 
-  const [checking, setChecking] = useState<boolean>(!!cid)
-  const [allowed, setAllowed] = useState<boolean>(false)
+  const canBypass =
+    currentUser?.role === 'FACULTY' || currentUser?.role === 'ADMIN'
+  const needEnrollmentCheck = !!cid && !canBypass
 
-  useEffect(() => {
-    let ignore = false
-
-    const verify = async () => {
-      if (!cid) {
-        setAllowed(true)
-        setChecking(false)
-        return
-      }
-      setChecking(true)
-      try {
-        const enrollments = await getCurrentUserEnrollments()
-        if (ignore) return
-        const ok = Array.isArray(enrollments) && enrollments.some((e: any) => e.course === cid)
-        setAllowed(ok)
-      } catch {
-        if (!ignore) setAllowed(false)
-      } finally {
-        if (!ignore) setChecking(false)
-      }
-    }
-
-    verify()
-    return () => { ignore = true }
-  }, [cid])
+  const {
+    data: myCourseIds = [],
+    isLoading,
+    isFetching,
+    isUninitialized,
+    isError,
+  } = useGetMyEnrollmentsQuery(undefined, {
+    skip: !currentUser || !needEnrollmentCheck,
+  })
 
   if (!currentUser) {
     return <Navigate to="/Kambaz/Account/Signin" replace />
   }
 
-  if (cid) {
-    if (checking) {
+  if (needEnrollmentCheck) {
+    if (isLoading || isFetching || isUninitialized) {
       return (
         <div className="text-center py-5">
           <Spinner animation="border" role="status">
@@ -52,11 +38,12 @@ export default function ProtectedRoute({ children }: { children: any }) {
         </div>
       )
     }
-    if (!allowed) {
-      return <Navigate to="/Kambaz/Dashboard" replace />
+    const enrolled = myCourseIds.includes(cid!)
+    if (isError || !enrolled) {
+      return <Navigate to="/Kambaz/DashBoard" replace />
     }
   }
 
-  return children
+  return <>{children}</>
 }
 

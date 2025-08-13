@@ -1,9 +1,10 @@
 import { ListGroup } from 'react-bootstrap'
 import { Link, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
+import type { RootState } from '@/store'
 
 export default function AccountNavigation() {
-  const { currentUser } = useSelector((state: any) => state.accountReducer)
+  const currentUser = useSelector((s: RootState) => s.auth.currentUser)
   const links = currentUser ? ['Profile'] : ['Signin', 'Signup']
   const { pathname } = useLocation()
 

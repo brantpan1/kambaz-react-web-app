@@ -1,97 +1,82 @@
 import { useState, useEffect } from 'react'
-import { Form, Row, Col, Spinner } from 'react-bootstrap' // ⬅️ add Spinner
+import { Form, Row, Col, Spinner } from 'react-bootstrap'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import * as client from './client'
-
-interface Assignment {
-  _id: string
-  title: string
-  course: string
-  description: string
-  points: number
-  dueDate: string
-  availableDate: string
-  availableUntil?: string
-  modules: string[]
-}
+import {
+  useGetAssignmentByIdQuery,
+  useCreateAssignmentMutation,
+  useUpdateAssignmentMutation,
+} from '@features/assignments/assignmentsApi'
 
 export default function AssignmentEditor() {
   const { cid, aid } = useParams<{ cid: string; aid: string }>()
   const navigate = useNavigate()
-  const [loading, setLoading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [assignment, setAssignment] = useState<Assignment | null>(null)
 
   const isNewAssignment = aid === 'new'
 
-  const formatDateForInput = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toISOString().slice(0, 16)
-  }
+  const {
+    data: assignment,
+    isLoading: loading,
+    isFetching,
+  } = useGetAssignmentByIdQuery(aid!, { skip: !aid || isNewAssignment })
 
+  const [createAssignment, { isLoading: creating }] =
+    useCreateAssignmentMutation()
+  const [updateAssignment, { isLoading: updating }] =
+    useUpdateAssignmentMutation()
+
+  const nowIso = new Date().toISOString()
   const [formData, setFormData] = useState({
     title: 'New Assignment',
     description: '',
     points: 100,
-    dueDate: new Date().toISOString(),
-    availableDate: new Date().toISOString(),
-    availableUntil: new Date().toISOString(),
+    dueDate: nowIso,
+    availableDate: nowIso,
+    availableUntil: nowIso,
+    modules: ['Multiple Modules'],
   })
 
   useEffect(() => {
-    const fetchAssignment = async () => {
-      if (!isNewAssignment && aid) {
-        setLoading(true)
-        try {
-          const fetchedAssignment = await client.findAssignmentById(aid)
-          setAssignment(fetchedAssignment)
-          setFormData({
-            title: fetchedAssignment.title,
-            description: fetchedAssignment.description,
-            points: fetchedAssignment.points,
-            dueDate: fetchedAssignment.dueDate,
-            availableDate: fetchedAssignment.availableDate,
-            availableUntil:
-              fetchedAssignment.availableUntil || fetchedAssignment.dueDate,
-          })
-        } catch (error) {
-          console.error('Error fetching assignment:', error)
-        } finally {
-          setLoading(false)
-        }
-      }
+    if (assignment && !isNewAssignment) {
+      setFormData({
+        title: assignment.title,
+        description: assignment.description,
+        points: assignment.points,
+        dueDate: assignment.dueDate,
+        availableDate: assignment.availableDate,
+        availableUntil: assignment.availableUntil || assignment.dueDate,
+        modules: assignment.modules || [],
+      })
     }
-    fetchAssignment()
-  }, [aid, isNewAssignment])
+  }, [assignment, isNewAssignment])
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = (field: string, value: any) =>
     setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+
+  const formatDateForInput = (iso: string) =>
+    new Date(iso).toISOString().slice(0, 16)
+
+  const saving = creating || updating
 
   const handleSave = async () => {
     try {
-      setSaving(true)
       if (isNewAssignment) {
-        await client.createAssignment(cid!, {
-          ...formData,
-          modules: ['Multiple Modules'],
-        })
+        await createAssignment({
+          courseId: cid!,
+          body: formData,
+        }).unwrap()
       } else {
-        await client.updateAssignment({
-          _id: aid,
-          ...assignment,
-          ...formData,
-        })
+        await updateAssignment({
+          id: aid!,
+          patch: { ...formData },
+        }).unwrap()
       }
       navigate(`/Kambaz/Courses/${cid}/Assignments`)
-    } catch (error) {
-      console.error('Error saving assignment:', error)
-    } finally {
-      setSaving(false)
+    } catch (e) {
+      console.error('Error saving assignment:', e)
     }
   }
 
-  if (loading) {
+  if (!isNewAssignment && (loading || isFetching)) {
     return (
       <div className="text-center py-5">
         <h4 className="text-muted">Loading assignment...</h4>
