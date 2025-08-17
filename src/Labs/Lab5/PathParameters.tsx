@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { FormControl } from 'react-bootstrap'
 
-const REMOTE_SERVER = import.meta.env.VITE_API_URL
+const REMOTE_SERVER = import.meta.env.VITE_SERVER_URL
 
 export default function PathParameters() {
   const [a, setA] = useState('34')

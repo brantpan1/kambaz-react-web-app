@@ -7,7 +7,7 @@ import HttpClient from './HttpClient'
 import WorkingWithObjectsAsynchronously from './WorkingWithObjectsAsynchronously'
 import WorkingWithArraysAsynchronously from './WorkingWithArraysAsynchronously'
 
-const REMOTE_SERVER = import.meta.env.VITE_API_URL
+const REMOTE_SERVER = import.meta.env.VITE_SERVER_URL
 
 export default function Lab5() {
   return (

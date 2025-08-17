@@ -1,4 +1,4 @@
-const REMOTE_SERVER = import.meta.env.VITE_API_URL
+const REMOTE_SERVER = import.meta.env.VITE_SERVER_URL
 export default function EnvironmentVariables() {
   return (
     <div id="wd-environment-variables">
