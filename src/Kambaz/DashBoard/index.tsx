@@ -3,8 +3,9 @@ import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
 import { Button, Spinner } from 'react-bootstrap'
 
-import CourseCard from './CourseCard'
-import CourseEditor from './CourseEditor'
+import CourseCard from './courseCard'
+import CourseEditor from './courseEditor'
+
 import './DashBoard.css'
 
 import {

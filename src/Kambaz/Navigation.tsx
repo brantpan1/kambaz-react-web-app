@@ -48,7 +48,7 @@ export default function KambazNavigation() {
       </ListGroup.Item>
       {navItems.map((link) => (
         <ListGroup.Item
-          key={link.path}
+          key={link.label}
           as={Link}
           to={link.path}
           className={`bg-black text-center border-0

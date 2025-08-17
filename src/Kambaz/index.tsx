@@ -1,10 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import Account from './Account'
-import Dashboard from './DashBoard'
-import KambazNavigation from './Navigation'
-import Courses from './Courses'
+import Account from './account'
+import Dashboard from './dashboard'
+import KambazNavigation from './navigation'
+import Courses from './courses'
 import './styles.css'
-import ProtectedRoute from './Account/ProtectedRoute'
+import ProtectedRoute from './account/protectedRoute'
 
 export default function Kambaz() {
   return (

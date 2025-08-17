@@ -37,6 +37,9 @@ export const api = createApi({
     'Assignment',
     'Enrollment',
     'Session',
+    'Quiz',
+    'Question',
+    'Attempt',
   ],
   endpoints: () => ({}),
 })

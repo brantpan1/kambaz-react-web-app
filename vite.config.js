@@ -9,5 +9,12 @@ export default defineConfig({
             interval: 1000,
         },
         host: true,
+        proxy: {
+            '/api': {
+                target: 'http://localhost:4000',
+                changeOrigin: true,
+                secure: false,
+            },
+        },
     },
 });

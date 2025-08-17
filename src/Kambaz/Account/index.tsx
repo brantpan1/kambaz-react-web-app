@@ -1,12 +1,12 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import type { RootState } from '@/store'
-import AccountNavigation from './Navigation'
-import Signin from './Signin'
-import Profile from './Profile'
-import Signup from './Signup'
-import ProtectedRoute from './ProtectedRoute'
-import Session from './Session'
+import AccountNavigation from './navigation'
+import Signin from './signin'
+import Profile from './profile'
+import Signup from './signup'
+import ProtectedRoute from './protectedRoute'
+import Session from './session'
 
 export default function Account() {
   const currentUser = useSelector((s: RootState) => s.auth.currentUser)

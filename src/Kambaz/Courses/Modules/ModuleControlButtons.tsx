@@ -2,7 +2,7 @@ import { BsPlus } from 'react-icons/bs'
 import { IoEllipsisVertical } from 'react-icons/io5'
 import { FaTrash, FaPen } from 'react-icons/fa'
 import { useSelector } from 'react-redux'
-import GreenCheckmark from './GreenCheckmark'
+import GreenCheckmark from './greenCheckmark'
 import type { RootState } from '@/store'
 
 export default function ModuleControlButtons({

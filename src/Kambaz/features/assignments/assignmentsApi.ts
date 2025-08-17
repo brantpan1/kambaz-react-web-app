@@ -1,4 +1,3 @@
-// src/Kambaz/features/assignments/assignmentsApi.ts
 import { api } from '@services/api'
 
 export interface Assignment {

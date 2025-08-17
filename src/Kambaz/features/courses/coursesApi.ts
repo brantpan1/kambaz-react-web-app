@@ -1,4 +1,3 @@
-// src/Kambaz/features/courses/coursesApi.ts
 import { api } from '@services/api'
 
 export interface Course {

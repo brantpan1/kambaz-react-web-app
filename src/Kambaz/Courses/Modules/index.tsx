@@ -3,9 +3,9 @@ import { ListGroup, FormControl, Spinner, Placeholder } from 'react-bootstrap'
 import { BsGripVertical } from 'react-icons/bs'
 import { useParams } from 'react-router-dom'
 
-import ModulesControls from './ModulesControls'
-import ModuleControlButtons from './ModuleControlButtons'
-import LessonControlButtons from './LessonControlButtons'
+import ModulesControls from './modulesControls'
+import ModuleControlButtons from './moduleControlButtons'
+import LessonControlButtons from './lessonControlButtons'
 
 import {
   useGetModulesByCourseQuery,

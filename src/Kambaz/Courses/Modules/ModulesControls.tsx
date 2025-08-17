@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Button, Dropdown } from 'react-bootstrap'
 import { FaPlus } from 'react-icons/fa6'
 import { useSelector } from 'react-redux'
-import GreenCheckmark from './GreenCheckmark'
-import ModuleEditor from './ModuleEditor'
+import GreenCheckmark from './greenCheckmark'
+import ModuleEditor from './moduleEditor'
 import type { RootState } from '@/store'
 
 export default function ModulesControls({
