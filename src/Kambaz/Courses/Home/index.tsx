@@ -1,5 +1,5 @@
-import Modules from '../modules'
-import CourseStatus from './status'
+import Modules from '../Modules'
+import CourseStatus from './Status'
 
 export default function Home() {
   return (

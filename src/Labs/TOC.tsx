@@ -59,7 +59,7 @@ export default function TOC() {
       <Nav.Item>
         <Nav.Link
           id="wd-onrender"
-          href="https://kambaz-node-server-app-1-iohe.onrender.com"
+          href="https://kambaz-node-server-app-2-rqcv.onrender.com"
           target="_blank"
           rel="noopener noreferrer"
         >
